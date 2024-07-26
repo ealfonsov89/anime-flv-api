@@ -11,6 +11,7 @@
     pkgs.stdenv.cc
     pkgs.pkg-config
     pkgs.openssl
+    pkgs.rustup
   ];
   # Sets environment variables in the workspace
   env = {
