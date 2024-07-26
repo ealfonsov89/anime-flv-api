@@ -1,45 +1,25 @@
+use anime_episode::scrap_anime_detail;
 
-struct  Anime {
-    name: String,
-    url: String,
-    image: String,
-    description: String
-}
-const BASE_URL: &str = "https://www3.animeflv.net";
+mod anime;
+mod anime_episode;
+mod macro_rules;
+
 fn main() {
-    let html_animes = scrap_anime_browse(1);
+    let genre = vec![to_string!("accion"), to_string!("ciencia-ficcion")];
+    let year = vec![to_string!("2024"), to_string!("2020")];
+    let format_type = vec![to_string!("tv")];
+    let status = vec![1];
+    let search = to_string!("");
 
-    for html_anime in html_animes {        
-        println!("{} - {} - {} - {}", html_anime.name, html_anime.url, html_anime.image, html_anime.description);
-    }
-}
-
-fn scrap_anime_browse(page: i32) -> Vec<Anime> {
-    let response = reqwest::blocking::get( format!("{BASE_URL}/browse?page={page}"));
-    let html_content = response.unwrap().text().unwrap();
-    let document = scraper::Html::parse_document(&html_content);
-    let html_anime_selector = scraper::Selector::parse("li article").unwrap();
-    let html_animes = document
-    .select(&html_anime_selector).map(|article| map_element_into_anime(article)).collect::<Vec<Anime>>();
-    return html_animes;
-}
-
-fn map_element_into_anime(article: scraper::ElementRef) -> Anime {
-    let anchor_selecctor = scraper::Selector::parse("a").unwrap();
-    let anchor = article.select(&anchor_selecctor).next().unwrap().attr("href").unwrap();
-
-    let image_selector = scraper::Selector::parse("img").unwrap();
-    let image = article.select(&image_selector).next().unwrap().attr("src").unwrap().to_string();
-
-    let description_selector = scraper::Selector::parse("div.Description p").unwrap();
-    let description = article.select(&description_selector).map(|description| description.text().collect()).collect::<Vec<String>>().join(" ");
-    
-    let name_selector = scraper::Selector::parse("h3.Title").unwrap();
-    let name = article.select(&name_selector).map(|description| description.text().collect()).collect::<Vec<String>>().join(" ");
-    return Anime {
-        name,
-        url: format!("{BASE_URL}{anchor}"),
-        image,
-        description
+    if let Ok(html_animes) =
+        anime::scrap_anime_browse(1, &genre, &year, &format_type, &status, search)
+    {
+        if let Some(first_value) = html_animes.get(0) {
+            if let Some(scrap_anime_detail) = scrap_anime_detail(&first_value.url) {
+                for anime_episode in scrap_anime_detail {
+                    println!("{} - {}", anime_episode.title, anime_episode.url);
+                }
+            }
+        }
     }
 }
